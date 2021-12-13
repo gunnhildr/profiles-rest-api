@@ -14,3 +14,6 @@ CRUD for user profiles
 
 ### feed
 Create and view status messages
+
+## Deployed at:
+http://ec2-18-132-246-213.eu-west-2.compute.amazonaws.com/api/
