@@ -1,20 +1,16 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, generics, authentication, permissions, filters
 
-from profiles_api import models
-from profiles_api import serializers
+from profiles_api import models, serializers
 
 from rest_framework.authentication import TokenAuthentication
-from profiles_api import permissions
 
-from rest_framework import filters
-
-
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.settings import api_settings
 
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from serializers import AuthTokenSerializer, UserSerializer
 
 
 class HelloApiView(APIView):
@@ -118,25 +114,55 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.UpdateOwnProfile,)
 
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('name', 'email',)
+    search_fields = (
+        "name",
+        "email",
+    )
 
 
 class UserLoginApiView(ObtainAuthToken):
     """Handle creating user authentication tokens"""
-    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES  # adds renderer classes to the view
+
+    renderer_classes = (
+        api_settings.DEFAULT_RENDERER_CLASSES
+    )  # adds renderer classes to the view
 
 
 class UserProfileFeedViewSet(viewsets.ModelViewSet):
     """Handles creating, reading and updating profile feed items"""
+
     authentication_classes = (TokenAuthentication,)
     serializer_class = serializers.ProfileFeedItemSerializer
     queryset = models.ProfileFeedItem.objects.all()
     permission_classes = (
         permissions.UpdateOwnStatus,
-        IsAuthenticatedOrReadOnly   # use IsAuthenticated if don't want to unauthenticated to view
+        IsAuthenticatedOrReadOnly,  # use IsAuthenticated if don't want to unauthenticated to view
     )
 
     def perform_create(self, serializer):
         """Sets the user profile to the logged in user"""
         # request will have user whenever user is authenticated;
         serializer.save(user_profile=self.request.user)
+
+
+class CreateUserView(generics.CreateAPIView):
+    """Create a new user in the system"""
+
+    serializer_class = UserSerializer
+
+
+class CreateTokenView(ObtainAuthToken):
+    """Create a new auth token for the user"""
+
+    serializer_class = AuthTokenSerializer
+    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+
+
+class ManageUserView(generics.RetrieveUpdateAPIView):
+    """Manage the authenticated user"""
+    serializer_class = UserSerializer
+    authentication_classes = (authentication.TokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self):
+        return self.request.user

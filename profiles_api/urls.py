@@ -20,5 +20,7 @@ router.register(
 urlpatterns = [
     path("hello-view/", views.HelloApiView.as_view()),
     path('login/', views.UserLoginApiView.as_view()),
+    path('create/', views.CreateUserView.as_view(), name='create'),
+    path('token/', views.CreateTokenView.as_view(), name='token'),
     path("", include(router.urls)),
 ]
